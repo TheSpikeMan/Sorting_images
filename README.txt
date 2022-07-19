@@ -17,7 +17,7 @@ Plany rozwojowe w najbliższym czasie.
 
 ---------------- ENG VERSION
 
-Sorting_images program is made to help you sort your images and movies, from one catalogue to other. The main reason of creating this kind of app was copying the pictures and movies in relation: mobile phone- PC. I would like to have full control of what program does and as well as letting the user decice about it.
+Sorting_images program is made to help you sort your images and movies, from one catalogue to other. The main reason of creating this kind of app was copying the pictures and movies in relation: mobile phone- PC. I would like to have full control of what program does and as well as letting the user decide about it.
 
 Input data:
 - 1. Path to catalogue, having the pictures and movies to sort.
