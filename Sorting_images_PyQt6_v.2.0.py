@@ -1,9 +1,9 @@
 import re
-import os
 import datetime
 from pathlib import Path
+import pandas as pd
 
-class Folder:
+class File:
     def __init__(self, source_folder_path, destination_folder_path):
         self.source_folder_path = Path(source_folder_path.replace("\\", "\\\\"))
         self.destination_folder_path = Path(destination_folder_path.replace("\\", "\\\\"))
@@ -84,7 +84,7 @@ class Folder:
         self.files_to_copy = list(set(matches_list) - set(list_of_copies))
         print(f"Among {self.counter_match} files {len(self.files_to_copy)} of them are to be copied.")
 
-    def create_folders(self, unique_dates):
+    def create_standard_folders(self, unique_dates):
         self.folder_counter = [0, 0]
 
         for date in unique_dates:
@@ -107,24 +107,73 @@ class Folder:
             except FileExistsError:
                 pass
 
-        print(f"{self.folder_counter[0]} year folders have been created.")
-        print(f"{self.folder_counter[1]} month folders have been created.")
+        if self.folder_counter[0] and self.folder_counter[1] != 0:
+            print(f"{self.folder_counter[0]} year folders have been created.")
+            print(f"{self.folder_counter[1]} month folders have been created.")
+        else:
+            print("No standard date folders have been created.")
         return True
 
-    def run(self):
+    def create_custom_folders(self, event_named_df):
+        self.folder_counter = [0, 0]
+        self.event_named_df = event_named_df
+        for row in self.event_named_df.iterrows():
+            year_path = self.destination_folder_path / str(row[1]['Year'])
+            try:
+                year_path.mkdir()
+                self.folder_counter[0] += 1
+            except FileExistsError:
+                pass
+
+            # Reading name from third position and setting a custom path
+            custom_path = year_path / str(row[1].iloc[2])
+            try:
+                custom_path.mkdir()
+                self.folder_counter[1] += 1
+            except FileExistsError:
+                pass
+        if self.folder_counter[0] and self.folder_counter[1] != 0:
+            print(f"{self.folder_counter[0]} year folders have been created.")
+            print(f"{self.folder_counter[1]} custom folders have been created.")
+        else:
+            print("No custom folders have been created.")
+        return True
+
+
+    def run(self, event_named_df):
         validation_flag = self.path_validation()
-        # if path is correct
+        # if paths are correct
         if validation_flag:
             matches_list, non_matches_list, unique_dates = self.find_image_video_files()
             list_of_copies = self.search_for_copies(matches_list)
-            # self.find_files_to_copy(list_of_copies, matches_list)
-            self.create_folders(unique_dates)
+            self.find_files_to_copy(list_of_copies, matches_list)
+            self.create_standard_folders(unique_dates)
+            self.create_custom_folders(event_named_df)
+
+class ExcelFile:
+    def read_from_excel_file(self, path):
+        self.path = Path(path.replace("\\", "\\\\"))
+        self.event_named_df = pd.read_excel(self.path)
+
+        # Read year from first column, which should contain a date and write it to 'Year' column
+        self.event_named_df['Year'] = self.event_named_df.iloc[:, 0].dt.year
+        return self.event_named_df
 
 # Main part
 if True:
     # Paths definitions
-    source_folder_path = r'G:\Do segregacji 2024'
-    destination_folder_path = r'G:\Folder testowy'
+    source_folder_path = r''
+    destination_folder_path = r''
+    excel_file_path = r''
 
-    object = Folder(source_folder_path, destination_folder_path)
-    object.run()
+    # Read custom folders from excel File
+    if excel_file_path != "":
+        excel_file_obj = ExcelFile()
+        event_named_df = excel_file_obj.read_from_excel_file(excel_file_path)
+    else:
+        # If no path has been defined set empty DataFrame
+        event_named_df = pd.DataFrame()
+
+    # Run main program
+    file = File(source_folder_path, destination_folder_path)
+    file.run(event_named_df)
