@@ -28,8 +28,9 @@ class File:
         self.non_matches_list = []
         self.unique_dates = []
 
-        # Defining DataFrame to keep filenames to copy and future destination folder
+        # Defining DataFrames to keep filenames to copy and future destination folder
         self.files_data_frame = pd.DataFrame(columns=["filename", "extension", "year", "month", "day"])
+        self.files_non_matching = pd.DataFrame(columns=["filename"])
 
         # Define counters to count found images and movies
         self.counter = 0
@@ -83,6 +84,8 @@ class File:
         # Find unique year and month
         self.unique_dates = list(set(self.unique_dates))
 
+        self.generateExcelFile(self.files_data_frame, self.destination_folder_path, "List_of_files.xlsx")
+
         # Write information about files matches and found
         if self.counter > 0:
             print("Found", self.counter, "files from which", round(100 * self.counter_match / self.counter, 2),
@@ -90,6 +93,12 @@ class File:
         else:
             print("No files found.")
         # Return all filenames with match and unique year and month
+
+        # Exporting non-matches list to excel
+        self.files_non_matching = pd.concat([self.files_non_matching,
+                                            pd.DataFrame([[self.non_matches_list]])])
+        self.generateExcelFile(self.files_non_matching, self.destination_folder_path, "Non matches.xlsx")
+
         return self.matches_list, self.non_matches_list, self.unique_dates
     
     def search_for_copies(self, matches_list):
@@ -180,27 +189,31 @@ class File:
 
     def generateExcelFile(self,
                           dataframe,
-                          destination):
+                          destination,
+                          filename):
         """
 
         Parameters
         ----------
         dataframe: export DataFrame
         destination: export destination, pathlib.Path Object
+        filename: name of the file
 
         Returns
         -----
         None
 
         """
+        self.destination_path = destination/filename
         try:
             print("Preparing excel file to export.")
-            dataframe.to_excel(excel_writer=destination,
+            dataframe.to_excel(excel_writer=self.destination_path,
                                header=True,
-                               index=False)
-            print(f"File successfully exported to location {destination}.")
-        except:
-            print("There was an error while exporting the file to excel.")
+                               index=False,
+                               engine='openpyxl')
+            print(f"File successfully exported to location {self.destination_path}.")
+        except Exception as e:
+            print(f"There was an error while exporting the file to excel: {e}")
 
 
     def run(self, event_named_df):
