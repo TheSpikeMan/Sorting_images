@@ -177,6 +177,32 @@ class File:
         else:
             print("Copying will not be performed as there is no files to copy.")
         return True
+
+    def generateExcelFile(self,
+                          dataframe,
+                          destination):
+        """
+
+        Parameters
+        ----------
+        dataframe: export DataFrame
+        destination: export destination, pathlib.Path Object
+
+        Returns
+        -----
+        None
+
+        """
+        try:
+            print("Preparing excel file to export.")
+            dataframe.to_excel(excel_writer=destination,
+                               header=True,
+                               index=False)
+            print(f"File successfully exported to location {destination}.")
+        except:
+            print("There was an error while exporting the file to excel.")
+
+
     def run(self, event_named_df):
         validation_flag = self.path_validation()
         # if paths are correct
