@@ -2,6 +2,7 @@ import re
 import datetime
 from pathlib import Path
 import pandas as pd
+import shutil
 
 class File:
     def __init__(self, source_folder_path, destination_folder_path):
@@ -27,6 +28,9 @@ class File:
         self.non_matches_list = []
         self.unique_dates = []
 
+        # Defining DataFrame to keep filenames to copy and future destination folder
+        self.files_data_frame = pd.DataFrame(columns=["filename", "extension", "year", "month", "day"])
+
         # Define counters to count found images and movies
         self.counter = 0
         self.counter_match = 0
@@ -35,8 +39,11 @@ class File:
         self.pattern = r'.*(?P<year>20[123]\d)(?P<month>[01]\d)(?P<day>[0123]\d).*'
         self.extensions_to_search = ['*.jpg', '*.jpeg', '*.mp4']
 
+        print("Starting files analysis...")
+
         for extension in self.extensions_to_search:
             try:
+                # Finds all files with specific extension
                 for file in self.source_folder_path.rglob(extension):
                     self.counter += 1
                     # Check if match exists
@@ -52,6 +59,19 @@ class File:
                             # Add what's matched to unique_dates and the whole file to matches_list
                             self.unique_dates.append(f"{self.year}-{self.month:02}")
                             self.matches_list.append(file.name)
+
+                            # Join together file attributes with future copy destination folder
+                            self.new_row_to_concat = pd.DataFrame([{
+                                'filename':str(file.name),
+                                'extension':extension,
+                                'year':f"{self.year}",
+                                'month':f"{self.month:02}",
+                                'day':f"{self.day:02}"}]
+                            )
+                            self.files_data_frame = pd.concat([self.files_data_frame,
+                                                               self.new_row_to_concat],
+                                                               axis=0)
+
                             self.counter_match += 1
                         except ValueError:
                             continue
@@ -139,7 +159,24 @@ class File:
             print("No custom folders have been created.")
         return True
 
-
+    def copy_files(self):
+        if len(self.files_to_copy) > 0:
+            print("Starting copying...")
+            for file in self.matches_list:
+                if file in self.files_to_copy:
+                    # Finding the year and month to copy the file
+                    year = self.files_data_frame.loc[self.files_data_frame['filename'] == file, 'year'].iloc[0]
+                    month = self.files_data_frame.loc[self.files_data_frame['filename'] == file, 'month'].iloc[0]
+                    try:
+                        shutil.copy2(self.source_folder_path/file, self.destination_folder_path/year/month)
+                    except:
+                        print("Errors have been encountered while copying.")
+                else:
+                    continue
+            print("Copying finished")
+        else:
+            print("Copying will not be performed as there is no files to copy.")
+        return True
     def run(self, event_named_df):
         validation_flag = self.path_validation()
         # if paths are correct
@@ -149,6 +186,7 @@ class File:
             self.find_files_to_copy(list_of_copies, matches_list)
             self.create_standard_folders(unique_dates)
             self.create_custom_folders(event_named_df)
+            self.copy_files()
 
 class ExcelFile:
     def read_from_excel_file(self, path):
@@ -162,8 +200,8 @@ class ExcelFile:
 # Main part
 if True:
     # Paths definitions
-    source_folder_path = r''
-    destination_folder_path = r''
+    source_folder_path = r'G:\Do segregacji 06.02.2022-23.11.2023'
+    destination_folder_path = r'G:\Folder testowy'
     excel_file_path = r''
 
     # Read custom folders from excel File
