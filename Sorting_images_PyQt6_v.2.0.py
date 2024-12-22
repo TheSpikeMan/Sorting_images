@@ -27,13 +27,10 @@ class File:
         self.matches_list = []
         self.non_matches_list = []
         self.unique_dates = []
+        self.new_row_to_add = []
 
-        # Defining DataFrames to keep filenames to copy and future destination folder
-        self.files_data_frame = pd.DataFrame(columns=["filename", "extension", "year", "month", "day"])
-        self.files_non_matching = pd.DataFrame(columns=["filename"])
-
-        # Define counters to count found images and movies
-        self.counter = 0
+        # Define counters to count found images and movies and total counts
+        self.counter_total = 0
         self.counter_match = 0
 
         # Define pattern and extensions to search
@@ -46,7 +43,7 @@ class File:
             try:
                 # Finds all files with specific extension
                 for file in self.source_folder_path.rglob(extension):
-                    self.counter += 1
+                    self.counter_total += 1
                     # Check if match exists
                     self.match_obj = re.match(pattern=self.pattern, string=file.stem)
                     if self.match_obj:
@@ -59,19 +56,15 @@ class File:
 
                             # Add what's matched to unique_dates and the whole file to matches_list
                             self.unique_dates.append(f"{self.year}-{self.month:02}")
-                            self.matches_list.append(file.name)
 
                             # Join together file attributes with future copy destination folder
-                            self.new_row_to_concat = pd.DataFrame([{
+                            self.new_row_to_add.append({
                                 'filename':str(file.name),
                                 'extension':extension,
                                 'year':f"{self.year}",
                                 'month':f"{self.month:02}",
-                                'day':f"{self.day:02}"}]
+                                'day':f"{self.day:02}"}
                             )
-                            self.files_data_frame = pd.concat([self.files_data_frame,
-                                                               self.new_row_to_concat],
-                                                               axis=0)
 
                             self.counter_match += 1
                         except ValueError:
@@ -81,42 +74,45 @@ class File:
                         self.non_matches_list.append(file.name)
             except Exception as e:
                 print(f"Error processing files: {e}")
+
+        # Generating DataFrame with matches list and saving as an Excel file
+        self.photo_video_metadata_df  = pd.DataFrame(self.new_row_to_add, columns=["filename", "extension", "year", "month", "day"])
+        self.generateExcelFile(self.photo_video_metadata_df , self.destination_folder_path, "List_of_files.xlsx")
+
+        # Generating DataFrame with non matches list and saving as an Excel
+        self.files_non_matching = pd.DataFrame(self.non_matches_list, columns = ['filename'])
+        self.generateExcelFile(self.files_non_matching, self.destination_folder_path, "Non matches.xlsx")
+
         # Find unique year and month
         self.unique_dates = list(set(self.unique_dates))
 
-        self.generateExcelFile(self.files_data_frame, self.destination_folder_path, "List_of_files.xlsx")
+        # Prepare matches list
+        self.matches_list = self.photo_video_metadata_df .loc[:, 'filename'].drop_duplicates().to_list()
 
         # Write information about files matches and found
-        if self.counter > 0:
-            print("Found", self.counter, "files from which", round(100 * self.counter_match / self.counter, 2),
+        if self.counter_total > 0:
+            print("Found", self.counter_total, "files from which", round(100 * self.counter_match / self.counter_total, 2),
                   "% belong to pictures or movies.")
         else:
             print("No files found.")
-        # Return all filenames with match and unique year and month
-
-        # Exporting non-matches list to excel
-        self.files_non_matching = pd.concat([self.files_non_matching,
-                                            pd.DataFrame([[self.non_matches_list]])])
-        self.generateExcelFile(self.files_non_matching, self.destination_folder_path, "Non matches.xlsx")
-
-        return self.matches_list, self.non_matches_list, self.unique_dates
+        return True
     
-    def search_for_copies(self, matches_list):
+    def search_for_copies(self):
         self.list_of_copies = []
-        for picture in matches_list:
+        for picture in self.matches_list:
             for file in self.destination_folder_path.rglob(picture):
                 # If file has been found add it to the list
                 self.list_of_copies.append(file.name)
-        return self.list_of_copies
+        return True
 
-    def find_files_to_copy(self, list_of_copies, matches_list ):
-        self.files_to_copy = list(set(matches_list) - set(list_of_copies))
+    def find_files_to_copy(self):
+        self.files_to_copy = list(set(self.matches_list) - set(self.list_of_copies))
         print(f"Among {self.counter_match} files {len(self.files_to_copy)} of them are to be copied.")
 
-    def create_standard_folders(self, unique_dates):
+    def create_standard_folders(self):
         self.folder_counter = [0, 0]
 
-        for date in unique_dates:
+        for date in self.unique_dates:
             # Split date once to get year and month
             year, month = date.split("-")
 
@@ -174,8 +170,8 @@ class File:
             for file in self.matches_list:
                 if file in self.files_to_copy:
                     # Finding the year and month to copy the file
-                    year = self.files_data_frame.loc[self.files_data_frame['filename'] == file, 'year'].iloc[0]
-                    month = self.files_data_frame.loc[self.files_data_frame['filename'] == file, 'month'].iloc[0]
+                    year = self.photo_video_metadata_df .loc[self.photo_video_metadata_df ['filename'] == file, 'year'].iloc[0]
+                    month = self.photo_video_metadata_df .loc[self.photo_video_metadata_df ['filename'] == file, 'month'].iloc[0]
                     try:
                         shutil.copy2(self.source_folder_path/file, self.destination_folder_path/year/month)
                     except:
@@ -215,17 +211,19 @@ class File:
         except Exception as e:
             print(f"There was an error while exporting the file to excel: {e}")
 
+        return True
 
     def run(self, event_named_df):
         validation_flag = self.path_validation()
         # if paths are correct
         if validation_flag:
-            matches_list, non_matches_list, unique_dates = self.find_image_video_files()
-            list_of_copies = self.search_for_copies(matches_list)
-            self.find_files_to_copy(list_of_copies, matches_list)
-            self.create_standard_folders(unique_dates)
+            self.find_image_video_files()
+            self.search_for_copies()
+            self.find_files_to_copy()
+            self.create_standard_folders()
             self.create_custom_folders(event_named_df)
             self.copy_files()
+        return True
 
 class ExcelFile:
     def read_from_excel_file(self, path):
