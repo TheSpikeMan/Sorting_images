@@ -184,6 +184,63 @@ class File:
             print("Copying will not be performed as there is no files to copy.")
         return True
 
+    def read_event_names_from_pictures(self, reading_range):
+        """
+
+        Parameters
+        ----------
+        reading_range: STRING, Path to folder being a source of folder names according to dates
+
+        Returns
+        -------
+
+        """
+        self.reading_range = Path(reading_range.replace("\\", "\\\\"))
+        self.pattern = r'.*(?P<year>20[123]\d)(?P<month>[01]\d)(?P<day>[0123]\d).*'
+        self.extensions_to_search = ['*.jpg', '*.jpeg', '*.mp4']
+        self.range_to_add = []
+
+        print("Starting event analysis...")
+
+        # For all extensions defined above do...
+        for extension in self.extensions_to_search:
+            try:
+                # Finds all files with specific extension
+                for file in self.reading_range.rglob(extension):
+                    self.match_obj = re.match(pattern=self.pattern, string=file.stem)
+                    # If match
+                    if self.match_obj:
+                        # Calculate values
+                        self.year = int(self.match_obj.group('year'))
+                        self.month = int(self.match_obj.group('month'))
+                        self.day = int(self.match_obj.group('day'))
+                        self.event_name = file.parent.name
+                        self.date = datetime.date(self.year, self.month, self.day)
+                        # Every iteration add a next list element as a set
+                        self.range_to_add.append({
+                            'event_name': self.event_name,
+                            'extension': extension,
+                            'year': f"{self.year}",
+                            'month': f"{self.month:02}",
+                            'day': f"{self.day:02}",
+                            'date': self.date})
+            except Exception as e:
+                print(f"There was an error while analyzing the events: {e}")
+
+        # Create a DataFrame with list of sets
+        self.event_names_df = pd.DataFrame(self.range_to_add,
+                                           columns=["event_name", "extension", "year", "month", "day", "date"])
+        # Calculate a maximum and minimum value in the 'window' of grouped values
+        self.event_names_df['min_date'] = self.event_names_df.groupby(['event_name', 'year', 'month'])['date'].transform('min')
+        self.event_names_df['max_date'] = self.event_names_df.groupby(['event_name', 'year', 'month'])['date'].transform('max')
+        # Drop not used columns
+        self.event_names_df.drop(columns = ['extension', 'day', 'date'], inplace=True)
+        # Drop duplicates
+        self.event_names_df.drop_duplicates(inplace=True)
+        # Save to Excel file
+        self.generateExcelFile(self.event_names_df, self.destination_folder_path, "Event names.xlsx")
+
+        return True
     def generateExcelFile(self,
                           dataframe,
                           destination,
@@ -238,6 +295,7 @@ class File:
             self.find_files_to_copy()
             self.create_standard_folders()
             self.create_custom_folders(event_named_df)
+            self.read_event_names_from_pictures("") # Set the path to date and filename source
             self.copy_files()
         return True
 
@@ -253,8 +311,8 @@ class ExcelFile:
 # Main part
 if True:
     # Paths definitions
-    source_folder_path = r'G:\Do segregacji 06.02.2022-23.11.2023'
-    destination_folder_path = r'G:\Folder testowy'
+    source_folder_path = r''
+    destination_folder_path = r''
     excel_file_path = r''
 
     # Read custom folders from excel File
