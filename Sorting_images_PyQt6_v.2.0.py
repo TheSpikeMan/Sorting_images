@@ -3,6 +3,7 @@ import datetime
 from pathlib import Path
 import pandas as pd
 import shutil
+from openpyxl.styles import PatternFill
 
 class File:
     def __init__(self, source_folder_path, destination_folder_path):
@@ -77,11 +78,11 @@ class File:
 
         # Generating DataFrame with matches list and saving as an Excel file
         self.photo_video_metadata_df  = pd.DataFrame(self.new_row_to_add, columns=["filename", "extension", "year", "month", "day"])
-        self.generateExcelFile(self.photo_video_metadata_df , self.destination_folder_path, "List_of_files.xlsx")
+        self.generateExcelFile(self.photo_video_metadata_df , self.destination_folder_path, "Image and Video Files.xlsx")
 
         # Generating DataFrame with non matches list and saving as an Excel
         self.files_non_matching = pd.DataFrame(self.non_matches_list, columns = ['filename'])
-        self.generateExcelFile(self.files_non_matching, self.destination_folder_path, "Non matches.xlsx")
+        self.generateExcelFile(self.files_non_matching, self.destination_folder_path, "Non Image and Video Files.xlsx")
 
         # Find unique year and month
         self.unique_dates = list(set(self.unique_dates))
@@ -203,11 +204,26 @@ class File:
         self.destination_path = destination/filename
         try:
             print("Preparing excel file to export.")
-            dataframe.to_excel(excel_writer=self.destination_path,
-                               header=True,
-                               index=False,
-                               engine='openpyxl')
-            print(f"File successfully exported to location {self.destination_path}.")
+            with pd.ExcelWriter(path=self.destination_path,
+                                engine='openpyxl',
+                                mode='w') as writer:
+                dataframe.to_excel(writer, index=False, sheet_name='Arkusz1')
+
+                # Pobierz arkusz
+                sheet = writer.sheets['Arkusz1']
+
+                # Dopasowanie szerokości kolumn
+                for col in sheet.columns:
+                    max_length = max(len(str(cell.value)) for cell in col if cell.value)
+                    column = col[0].column_letter  # Pobierz literę kolumny
+                    sheet.column_dimensions[column].width = max_length + 2
+
+                # Kolorowanie nagłówków
+                header_fill = PatternFill(start_color="DCE6F1", end_color="DCE6F1", fill_type="solid")
+                for cell in sheet[1]:
+                    cell.fill = header_fill
+
+                print(f"File successfully exported to location {self.destination_path}.")
         except Exception as e:
             print(f"There was an error while exporting the file to excel: {e}")
 
