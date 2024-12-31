@@ -141,6 +141,7 @@ class File:
         return True
 
     def create_custom_folders(self, event_named_df):
+        print("Starting 'create_custom_folders' function...")
         self.folder_counter = [0, 0]
         self.event_named_df = event_named_df
         for row in self.event_named_df.iterrows():
