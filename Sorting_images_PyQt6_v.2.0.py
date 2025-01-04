@@ -261,8 +261,14 @@ class File:
             if not self.event_names_df[(x >= self.event_names_df['min_date']) & (x <= self.event_names_df['max_date'])].empty else None
         )
 
-        # Present only those files with no custom folder matching
-        self.photo_video_metadata_df = self.photo_video_metadata_df.loc[self.photo_video_metadata_df['event_name'].isna(), :]
+        # After comparing the dates above I remove time part from datetime object
+        self.photo_video_metadata_df['date'] = self.photo_video_metadata_df['date'].dt.date
+
+        # Present only those files with no custom folder matching and unique
+        self.photo_video_metadata_df = self.photo_video_metadata_df.loc[
+            self.photo_video_metadata_df['event_name'].isna(), ['date']].\
+            drop_duplicates().\
+            sort_values(by='date')
 
         # Generate a file with additional column containing matched custom folder
         self.generateExcelFile(self.photo_video_metadata_df,
