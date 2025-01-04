@@ -245,12 +245,15 @@ class File:
     def find_dates_with_no_custom_folder(self):
         print("Starting function checking matching pictures to folders")
 
-        # Convert columns to datetime format
-        self.event_names_df['min_date'] = pd.to_datetime(self.event_names_df['min_date'])
-        self.event_names_df['max_date'] = pd.to_datetime(self.event_names_df['max_date'])
+        # Veryfing if the pictures or videos are to be copies
+        self.photo_video_metadata_df = self.photo_video_metadata_df.loc[self.photo_video_metadata_df['filename'].isin(self.files_to_copy), :]
 
         # Create a column with date
         self.photo_video_metadata_df['date'] = pd.to_datetime(self.photo_video_metadata_df[['year', 'month', 'day']])
+
+        # Convert columns to datetime format
+        self.event_names_df['min_date'] = pd.to_datetime(self.event_names_df['min_date'])
+        self.event_names_df['max_date'] = pd.to_datetime(self.event_names_df['max_date'])
 
         # Check if date is in range of custom folder and apply custom folder name if true
         self.photo_video_metadata_df['event_name'] = self.photo_video_metadata_df['date'].apply(
@@ -258,10 +261,13 @@ class File:
             if not self.event_names_df[(x >= self.event_names_df['min_date']) & (x <= self.event_names_df['max_date'])].empty else None
         )
 
+        # Present only those files with no custom folder matching
+        self.photo_video_metadata_df = self.photo_video_metadata_df.loc[self.photo_video_metadata_df['event_name'].isna(), :]
+
         # Generate a file with additional column containing matched custom folder
         self.generateExcelFile(self.photo_video_metadata_df,
                                self.destination_folder_path,
-                               "Image and Video Files with matched folders.xlsx"
+                               "Image and Video Files not matching to custom folders.xlsx"
                                )
         return True
 
