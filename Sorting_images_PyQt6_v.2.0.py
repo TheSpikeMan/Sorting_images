@@ -38,12 +38,13 @@ class File:
         self.pattern = r'.*(?P<year>20[123]\d)(?P<month>[01]\d)(?P<day>[0123]\d).*'
         self.extensions_to_search = ['*.jpg', '*.jpeg', '*.mp4']
 
-        print("Starting files analysis...")
+        print("Starting files analysis in order to find pictures and movies...")
 
         for extension in self.extensions_to_search:
             try:
                 # Finds all files with specific extension
                 for file in self.source_folder_path.rglob(extension):
+                    # Count all files
                     self.counter_total += 1
                     # Check if match exists
                     self.match_obj = re.match(pattern=self.pattern, string=file.stem)
@@ -88,7 +89,7 @@ class File:
         self.unique_dates = list(set(self.unique_dates))
 
         # Prepare matches list
-        self.matches_list = self.photo_video_metadata_df .loc[:, 'filename'].drop_duplicates().to_list()
+        self.matches_list = self.photo_video_metadata_df.loc[:, 'filename'].drop_duplicates().to_list()
 
         # Write information about files matches and found
         if self.counter_total > 0:
@@ -248,7 +249,7 @@ class File:
         self.event_names_df['min_date'] = pd.to_datetime(self.event_names_df['min_date'])
         self.event_names_df['max_date'] = pd.to_datetime(self.event_names_df['max_date'])
 
-        # Create w column with date
+        # Create a column with date
         self.photo_video_metadata_df['date'] = pd.to_datetime(self.photo_video_metadata_df[['year', 'month', 'day']])
 
         # Check if date is in range of custom folder and apply custom folder name if true
@@ -311,15 +312,33 @@ class File:
 
     def run(self, event_named_df):
         validation_flag = self.path_validation()
-        # if paths are correct
+        # If paths are correct
         if validation_flag:
+
+            # Find and count image and video files. Add these items to self.self.photo_video_metadata_df and self.matches_list
+            # and self.files_non_matching. Create unique list of year-month combination based on the pictures.
             self.find_image_video_files()
+
+            # Find all files from self.matches_list in destination location and create self.list_of_copies having all found copies
             self.search_for_copies()
+
+            # Create self.files_to_copy having files to be copied based on self.matches_list and self.list_of_copies
             self.find_files_to_copy()
+
+            # Creating standard folders basen on combination of year and month
             self.create_standard_folders()
+
+            # Creating custom folders if external excel file has been declares
             self.create_custom_folders(event_named_df)
+
+            # Create a DataFrame building a source of custom event to dates matches, based on the segregated pictures
+            # and write it to self.event_names_df
             self.read_event_names_from_pictures("") # Set the path to date and filename source
+
+            # Try to join together pictures and videos from source with custom folders from function above
             self.find_dates_with_no_custom_folder()
+
+            # Copy files from list of self.files_to_copy to destination location (based on year-month so far)
             #self.copy_files()
         return True
 
@@ -334,19 +353,29 @@ class ExcelFile:
 
 # Main part
 if True:
-    # Paths definitions
+    ######################################
+
+    # Paths definitions to be defined
     source_folder_path = r''
     destination_folder_path = r''
     excel_file_path = r''
 
+    #######################################
+
     # Read custom folders from excel File
+
+    # If custom folders have been defined
     if excel_file_path != "":
         excel_file_obj = ExcelFile()
         event_named_df = excel_file_obj.read_from_excel_file(excel_file_path)
+
+    # In other cases
     else:
         # If no path has been defined set empty DataFrame
         event_named_df = pd.DataFrame()
 
-    # Run main program
+    # Anyway run main program starting with creating File Class object
     file = File(source_folder_path, destination_folder_path)
+
+    # After creating File Class object start 'run' method on that File Class object
     file.run(event_named_df)
