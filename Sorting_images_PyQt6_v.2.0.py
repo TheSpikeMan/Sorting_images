@@ -66,8 +66,8 @@ class File:
                                 'year':f"{self.year}",
                                 'month':f"{self.month:02}",
                                 'day':f"{self.day:02}",
-                                'date':f"{datetime.date(self.year, self.month, self.day)}"}
-                            )
+                                'date': datetime.date(self.year, self.month, self.day)
+                            })
                             self.counter_match += 1
                         except ValueError:
                             continue
@@ -264,16 +264,30 @@ class File:
 
         # After comparing the dates above I remove time part from datetime object
         self.photo_video_metadata_with_no_custom_folders['date'] = self.photo_video_metadata_with_no_custom_folders['date'].dt.date
-        self.photo_video_metadata_with_no_custom_folders['custom_folder_name'] = ""
 
         # Present only those files with no custom folder matching and unique
         self.photo_video_metadata_with_no_custom_folders = self.photo_video_metadata_with_no_custom_folders.loc[
-            self.photo_video_metadata_with_no_custom_folders['event_name'].isna(), ['date', 'custom_folder_name']].\
+            self.photo_video_metadata_with_no_custom_folders['event_name'].isna(), ['date']].\
             drop_duplicates().\
             sort_values(by='date')
 
-        self.photo_video_metadata_with_no_custom_folders
+        # Join together restricted DataFrame with its source to find random filename
+        self.photo_video_metadata_with_no_custom_folders = pd.merge(
+            self.photo_video_metadata_with_no_custom_folders,
+            self.photo_video_metadata_df,
+            on='date'
+        )
+        self.photo_video_metadata_with_no_custom_folders = self.photo_video_metadata_with_no_custom_folders.loc[:, ['date', 'filename']]
 
+        self.photo_video_metadata_with_no_custom_folders  = self.photo_video_metadata_with_no_custom_folders.\
+            groupby(by=['date']).first().\
+            reset_index()
+
+        # Adding a column to set custom folder name
+        self.photo_video_metadata_with_no_custom_folders['custom_folder_name'] = ""
+
+        # Renaming columns
+        self.photo_video_metadata_with_no_custom_folders.columns = ['date', 'random_filename', 'custom_folder_name']
 
         # Generate a file with additional column containing matched custom folder
         self.generateExcelFile(self.photo_video_metadata_with_no_custom_folders,
