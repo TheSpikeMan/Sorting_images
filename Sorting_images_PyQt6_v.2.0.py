@@ -6,9 +6,10 @@ import shutil
 from openpyxl.styles import PatternFill
 
 class File:
-    def __init__(self, source_folder_path, destination_folder_path):
+    def __init__(self, source_folder_path, destination_folder_path, event_named_df):
         self.source_folder_path = Path(source_folder_path.replace("\\", "\\\\"))
         self.destination_folder_path = Path(destination_folder_path.replace("\\", "\\\\"))
+        self.event_named_df = event_named_df
     def path_validation(self):
         self.folder_paths = [self.source_folder_path, self.destination_folder_path]
         for index, self.path in enumerate(self.folder_paths):
@@ -100,7 +101,9 @@ class File:
         return True
     
     def search_for_copies(self):
+        print("search")
         self.list_of_copies = []
+        print("Ok")
         for picture in self.matches_list:
             for file in self.destination_folder_path.rglob(picture):
                 # If file has been found add it to the list
@@ -141,20 +144,22 @@ class File:
             print("No standard date folders have been created.")
         return True
 
-    def create_custom_folders(self, event_named_df):
+    def create_custom_folders(self):
         print("Starting 'create_custom_folders' function...")
         self.folder_counter = [0, 0]
-        self.event_named_df = event_named_df
-        for row in self.event_named_df.iterrows():
-            year_path = self.destination_folder_path / str(row[1]['Year'])
+        for index, row in self.event_named_df.iterrows():
+            print(type(row['date']))
+            year_path = self.destination_folder_path / str(row['date'].year)
+            # Creating year folder if not exist
             try:
                 year_path.mkdir()
                 self.folder_counter[0] += 1
             except FileExistsError:
                 pass
 
-            # Reading name from third position and setting a custom path
-            custom_path = year_path / str(row[1].iloc[2])
+            # Creating custom folder based on the file
+            custom_path = year_path / row['custom_folder_name']
+            print(custom_path)
             try:
                 custom_path.mkdir()
                 self.folder_counter[1] += 1
@@ -244,7 +249,6 @@ class File:
 
     def find_dates_with_no_custom_folder(self):
         print("Starting function checking matching pictures to folders")
-
 
         # Veryfing if the pictures or videos are to be copies
         self.photo_video_metadata_with_no_custom_folders = self.photo_video_metadata_df.loc[self.photo_video_metadata_df['filename'].isin(self.files_to_copy), :]
@@ -341,7 +345,7 @@ class File:
 
         return True
 
-    def run(self, event_named_df):
+    def run(self):
         validation_flag = self.path_validation()
         # If paths are correct
         if validation_flag:
@@ -360,7 +364,7 @@ class File:
             self.create_standard_folders()
 
             # Creating custom folders if external excel file has been declares
-            self.create_custom_folders(event_named_df)
+            self.create_custom_folders()
 
             # Create a DataFrame building a source of custom event to dates matches, based on the segregated pictures
             # and write it to self.event_names_df
@@ -374,12 +378,36 @@ class File:
         return True
 
 class ExcelFile:
-    def read_from_excel_file(self, path):
-        self.path = Path(path.replace("\\", "\\\\"))
-        self.event_named_df = pd.read_excel(self.path)
 
-        # Read year from first column, which should contain a date and write it to 'Year' column
-        self.event_named_df['Year'] = self.event_named_df.iloc[:, 0].dt.year
+    def __init__(self, excel_file_path):
+        self.excel_file_path = Path(excel_file_path.replace("\\", "\\\\"))
+
+    def path_validation(self):
+        self.folder_paths = [self.excel_file_path]
+        for index, self.path in enumerate(self.folder_paths):
+            if self.path.exists():
+                if self.path.is_file():
+                    print(f"Nr {index + 1} path validation successful.")
+                else:
+                    print(f"Nr {index + 1} path validation unsuccessful - path indicates file.")
+                    return False
+            else:
+                print(f"Nr {index + 1} path validation unsuccessful - path does not exist.")
+                return False
+        return True
+
+    def read_from_excel_file(self):
+        self.event_named_df = pd.read_excel(self.excel_file_path)
+        self.event_named_df['date'] = pd.to_datetime(self.event_named_df['date'])
+        return self.event_named_df
+
+    def run(self):
+        validation_flag = self.path_validation()
+        # If paths are correct
+        if validation_flag:
+            self.event_named_df = self.read_from_excel_file()
+        else:
+            print("There was an error with path")
         return self.event_named_df
 
 # Main part
@@ -397,8 +425,8 @@ if True:
 
     # If custom folders have been defined
     if excel_file_path != "":
-        excel_file_obj = ExcelFile()
-        event_named_df = excel_file_obj.read_from_excel_file(excel_file_path)
+        excel_file_obj = ExcelFile(excel_file_path)
+        event_named_df = excel_file_obj.run()
 
     # In other cases
     else:
@@ -406,7 +434,7 @@ if True:
         event_named_df = pd.DataFrame()
 
     # Anyway run main program starting with creating File Class object
-    file = File(source_folder_path, destination_folder_path)
+    file = File(source_folder_path, destination_folder_path, event_named_df)
 
     # After creating File Class object start 'run' method on that File Class object
-    file.run(event_named_df)
+    file.run()
