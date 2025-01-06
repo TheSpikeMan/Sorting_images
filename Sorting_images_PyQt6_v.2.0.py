@@ -6,11 +6,12 @@ import shutil
 from openpyxl.styles import PatternFill
 
 class File:
-    def __init__(self, source_folder_path, destination_folder_path, event_named_df, standard_or_custom_folder):
+    def __init__(self, source_folder_path, destination_folder_path, event_named_df, standard_or_custom_folder, copy_files):
         self.source_folder_path = Path(source_folder_path.replace("\\", "\\\\"))
         self.destination_folder_path = Path(destination_folder_path.replace("\\", "\\\\"))
         self.event_named_df = event_named_df
         self.standard_or_custom_folder = standard_or_custom_folder
+        self.copy_files = copy_files
     def path_validation(self):
         self.folder_paths = [self.source_folder_path, self.destination_folder_path]
         for index, self.path in enumerate(self.folder_paths):
@@ -377,7 +378,8 @@ class File:
             self.find_dates_with_no_custom_folder()
 
             # Copy files from list of self.files_to_copy to destination location (based on year-month so far)
-            #self.copy_files()
+            if self.copy_files == 1:
+                self.copy_files()
         return True
 
 class ExcelFile:
@@ -427,6 +429,11 @@ if True:
     # 2 - create custom folders and standard folders if custom does not exist
     standard_or_custom_folder = 1
 
+    # Copy Files
+    # 1 - copy files
+    # 0 - only analyze
+    copy_files = 0
+
     #######################################
 
     # Read custom folders from excel File
@@ -442,7 +449,7 @@ if True:
         event_named_df = pd.DataFrame()
 
     # Anyway run main program starting with creating File Class object
-    file = File(source_folder_path, destination_folder_path, event_named_df, standard_or_custom_folder)
+    file = File(source_folder_path, destination_folder_path, event_named_df, standard_or_custom_folder, copy_files)
 
     # After creating File Class object start 'run' method on that File Class object
     file.run()
