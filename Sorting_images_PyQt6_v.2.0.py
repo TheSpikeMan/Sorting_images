@@ -245,33 +245,36 @@ class File:
     def find_dates_with_no_custom_folder(self):
         print("Starting function checking matching pictures to folders")
 
+
         # Veryfing if the pictures or videos are to be copies
-        self.photo_video_metadata_df = self.photo_video_metadata_df.loc[self.photo_video_metadata_df['filename'].isin(self.files_to_copy), :]
+        self.photo_video_metadata_with_no_custom_folders = self.photo_video_metadata_df.loc[self.photo_video_metadata_df['filename'].isin(self.files_to_copy), :]
 
         # Create a column with date
-        self.photo_video_metadata_df['date'] = pd.to_datetime(self.photo_video_metadata_df[['year', 'month', 'day']])
+        self.photo_video_metadata_with_no_custom_folders['date'] = pd.to_datetime(self.photo_video_metadata_with_no_custom_folders[['year', 'month', 'day']])
 
         # Convert columns to datetime format
         self.event_names_df['min_date'] = pd.to_datetime(self.event_names_df['min_date'])
         self.event_names_df['max_date'] = pd.to_datetime(self.event_names_df['max_date'])
 
         # Check if date is in range of custom folder and apply custom folder name if true
-        self.photo_video_metadata_df['event_name'] = self.photo_video_metadata_df['date'].apply(
+        self.photo_video_metadata_with_no_custom_folders['event_name'] = self.photo_video_metadata_with_no_custom_folders['date'].apply(
             lambda x: self.event_names_df.loc[(x >= self.event_names_df['min_date']) & (x <= self.event_names_df['max_date']), 'event_name'].values[0]
             if not self.event_names_df[(x >= self.event_names_df['min_date']) & (x <= self.event_names_df['max_date'])].empty else None
         )
 
         # After comparing the dates above I remove time part from datetime object
-        self.photo_video_metadata_df['date'] = self.photo_video_metadata_df['date'].dt.date
+        self.photo_video_metadata_with_no_custom_folders['date'] = self.photo_video_metadata_with_no_custom_folders['date'].dt.date
+        self.photo_video_metadata_with_no_custom_folders['custom_folder_name'] = ""
 
         # Present only those files with no custom folder matching and unique
-        self.photo_video_metadata_df = self.photo_video_metadata_df.loc[
-            self.photo_video_metadata_df['event_name'].isna(), ['date']].\
+        self.photo_video_metadata_with_no_custom_folders = self.photo_video_metadata_with_no_custom_folders.loc[
+            self.photo_video_metadata_with_no_custom_folders['event_name'].isna(), ['date', 'custom_folder_name']].\
             drop_duplicates().\
             sort_values(by='date')
 
+
         # Generate a file with additional column containing matched custom folder
-        self.generateExcelFile(self.photo_video_metadata_df,
+        self.generateExcelFile(self.photo_video_metadata_with_no_custom_folders,
                                self.destination_folder_path,
                                "Image and Video Files not matching to custom folders.xlsx"
                                )
