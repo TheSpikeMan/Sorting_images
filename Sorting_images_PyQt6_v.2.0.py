@@ -6,10 +6,11 @@ import shutil
 from openpyxl.styles import PatternFill
 
 class File:
-    def __init__(self, source_folder_path, destination_folder_path, event_named_df):
+    def __init__(self, source_folder_path, destination_folder_path, event_named_df, standard_or_custom_folder):
         self.source_folder_path = Path(source_folder_path.replace("\\", "\\\\"))
         self.destination_folder_path = Path(destination_folder_path.replace("\\", "\\\\"))
         self.event_named_df = event_named_df
+        self.standard_or_custom_folder = standard_or_custom_folder
     def path_validation(self):
         self.folder_paths = [self.source_folder_path, self.destination_folder_path]
         for index, self.path in enumerate(self.folder_paths):
@@ -360,11 +361,13 @@ class File:
             # Create self.files_to_copy having files to be copied based on self.matches_list and self.list_of_copies
             self.find_files_to_copy()
 
-            # Creating standard folders basen on combination of year and month
-            self.create_standard_folders()
+            if self.standard_or_custom_folder == 1:
+                # Creating custom folders if external excel file has been declared
+                self.create_custom_folders()
 
-            # Creating custom folders if external excel file has been declares
-            self.create_custom_folders()
+            if self.standard_or_custom_folder == 2:
+                # Creating standard folders basen on combination of year and month
+                self.create_standard_folders()
 
             # Create a DataFrame building a source of custom event to dates matches, based on the segregated pictures
             # and write it to self.event_names_df
@@ -419,6 +422,11 @@ if True:
     destination_folder_path = r''
     excel_file_path = r''
 
+    # Flag for creating standard or custom folders
+    # 1 - create only custom folders
+    # 2 - create custom folders and standard folders if custom does not exist
+    standard_or_custom_folder = 1
+
     #######################################
 
     # Read custom folders from excel File
@@ -434,7 +442,7 @@ if True:
         event_named_df = pd.DataFrame()
 
     # Anyway run main program starting with creating File Class object
-    file = File(source_folder_path, destination_folder_path, event_named_df)
+    file = File(source_folder_path, destination_folder_path, event_named_df, standard_or_custom_folder)
 
     # After creating File Class object start 'run' method on that File Class object
     file.run()
