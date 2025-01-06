@@ -65,9 +65,9 @@ class File:
                                 'extension':extension,
                                 'year':f"{self.year}",
                                 'month':f"{self.month:02}",
-                                'day':f"{self.day:02}"}
+                                'day':f"{self.day:02}",
+                                'date':f"{datetime.date(self.year, self.month, self.day)}"}
                             )
-
                             self.counter_match += 1
                         except ValueError:
                             continue
@@ -78,7 +78,7 @@ class File:
                 print(f"Error processing files: {e}")
 
         # Generating DataFrame with matches list and saving as an Excel file
-        self.photo_video_metadata_df  = pd.DataFrame(self.new_row_to_add, columns=["filename", "extension", "year", "month", "day"])
+        self.photo_video_metadata_df  = pd.DataFrame(self.new_row_to_add, columns=["filename", "extension", "year", "month", "day", "date"])
         self.generateExcelFile(self.photo_video_metadata_df , self.destination_folder_path, "Image and Video Files.xlsx")
 
         # Generating DataFrame with non matches list and saving as an Excel
@@ -271,6 +271,8 @@ class File:
             self.photo_video_metadata_with_no_custom_folders['event_name'].isna(), ['date', 'custom_folder_name']].\
             drop_duplicates().\
             sort_values(by='date')
+
+        self.photo_video_metadata_with_no_custom_folders
 
 
         # Generate a file with additional column containing matched custom folder
