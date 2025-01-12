@@ -176,7 +176,6 @@ class File:
 
     def copy_files(self):
         if len(self.files_to_copy) > 0:
-            print("Starting copying...")
             for file in self.matches_list:
                 if file in self.files_to_copy:
                     # Finding the year and month to copy the file
@@ -302,6 +301,24 @@ class File:
                                )
         return True
 
+    def verify_external_excel_custom_folder(self):
+        # dane do ustawienia customów
+        self.photo_video_metadata_with_no_custom_folders
+
+        # dane z ustawionymi customami
+        self.event_named_df
+
+        self.customs_ready = 1
+
+        for index, event in self.photo_video_metadata_with_no_custom_folders_df.iterrows():
+            if event['filename'] not in self.event_named_df['filename']
+                print(f"Custom folder missing for filename: {event['filename']}")
+                self.customs_ready = 0
+            else:
+                continue
+        return self.customs_ready
+
+
     def generateExcelFile(self,
                           dataframe,
                           destination,
@@ -377,9 +394,21 @@ class File:
             # Try to join together pictures and videos from source with custom folders from function above
             self.find_dates_with_no_custom_folder()
 
+            # Verify if all missing files and have the custom folder names declared
+            self.verify_external_excel_custom_folder()
+
+            # Check if pictures and videos were not customized in external Excel Folder
             # Copy files from list of self.files_to_copy to destination location (based on year-month so far)
-            if self.copy_files == 1:
+            if self.copy_files == 1 and self.customs_ready == 1:
+                print("Copying will now be performed")
                 self.copy_files()
+            else:
+                if self.copy_files == 1 and self.customs_ready == 0:
+                    print("You need to declare custom folder names in external file before continuing")
+                elif self.copy_files == 0:
+                    print("Files will not be copied as no copying disposition has been expected ")
+                else:
+                    print("Copying operation not defined")
         return True
 
 class ExcelFile:
