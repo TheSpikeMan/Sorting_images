@@ -399,16 +399,20 @@ class File:
 
             # Check if pictures and videos were not customized in external Excel Folder
             # Copy files from list of self.files_to_copy to destination location (based on year-month so far)
-            if self.copy_files == 1 and self.customs_ready == 1:
-                print("Copying will now be performed")
-                self.copy_files()
+            if self.copy_files == 1:
+                if self.standard_or_custom_folder == 1:
+                    if self.customs_ready == 1:
+                        print("Copying will now be performed. Type: custom")
+                        self.copy_files()
+                    else:
+                        print("You need to declare custom folder names in external file before continuing")
+                elif self.standard_or_custom_folder == 2:
+                    print("Copying will now be performed. Type mixed: both standard and custom")
+                    self.copy_files()
+            elif self.copy_files == 0:
+                print("Files will not be copied as no copying disposition has been expected ")
             else:
-                if self.copy_files == 1 and self.customs_ready == 0:
-                    print("You need to declare custom folder names in external file before continuing")
-                elif self.copy_files == 0:
-                    print("Files will not be copied as no copying disposition has been expected ")
-                else:
-                    print("Copying operation not defined")
+                print("Copying operation not defined")
         return True
 
 class ExcelFile:
