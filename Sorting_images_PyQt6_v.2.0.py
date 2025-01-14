@@ -313,8 +313,7 @@ class File:
                     self.customs_ready = 0
             else:
                 continue
-        return self.customs_ready
-
+        return True
 
     def generateExcelFile(self,
                           dataframe,
@@ -436,11 +435,23 @@ class ExcelFile:
         self.event_named_df['date'] = pd.to_datetime(self.event_named_df['date'])
         return self.event_named_df
 
+    def prepare_the_file(self):
+        # Creating a view with events grouped and with minimum and maximum dates
+        self.event_named_df['min_date'] = self.event_named_df.groupby(['custom_folder_name'])['date'].transform('min')
+        self.event_named_df['max_date'] = self.event_named_df.groupby(['custom_folder_name'])['date'].transform('max')
+        self.event_named_df['year'] = self.event_named_df['date'].dt.year
+        self.event_named_df['month'] = self.event_named_df['date'].dt.month
+        self.event_named_prepared = self.event_named_df.loc[:, ['custom_folder_name', 'year', 'month', 'min_date', 'max_date']]
+        self.event_named_prepared.columns = ['event_name', 'year', 'month', 'min_date', 'max_date']
+        self.event_named_prepared.drop_duplicates()
+
     def run(self):
         validation_flag = self.path_validation()
         # If paths are correct
         if validation_flag:
             self.event_named_df = self.read_from_excel_file()
+            self.prepare_the_file()
+            print(f"File prepared: {self.event_named_df.head()}")
         else:
             print("There was an error with path")
         return self.event_named_df
