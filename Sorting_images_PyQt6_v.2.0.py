@@ -302,18 +302,15 @@ class File:
         return True
 
     def verify_external_excel_custom_folder(self):
-        # dane do ustawienia customów
-        self.photo_video_metadata_with_no_custom_folders
 
-        # dane z ustawionymi customami
-        self.event_named_df
-
+        # Default settings
         self.customs_ready = 1
-
-        for index, event in self.photo_video_metadata_with_no_custom_folders_df.iterrows():
-            if event['filename'] not in self.event_named_df['filename']
-                print(f"Custom folder missing for filename: {event['filename']}")
-                self.customs_ready = 0
+        for index, event in self.photo_video_metadata_with_no_custom_folders.iterrows():
+            if not self.event_named_df.empty:
+                if event['random_filename'] not in self.event_named_df['random_filename']:
+                    print(f"Custom folder missing for filename: {event['random_filename']}")
+                    # If not all event has been declared change the flag
+                    self.customs_ready = 0
             else:
                 continue
         return self.customs_ready
