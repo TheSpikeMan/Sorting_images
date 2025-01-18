@@ -104,9 +104,7 @@ class File:
         return True
     
     def search_for_copies(self):
-        print("search")
         self.list_of_copies = []
-        print("Ok")
         for picture in self.matches_list:
             for file in self.destination_folder_path.rglob(picture):
                 # If file has been found add it to the list
@@ -151,7 +149,6 @@ class File:
         print("Starting 'create_custom_folders' function...")
         self.folder_counter = [0, 0]
         for index, row in self.event_named_df.iterrows():
-            print(type(row['date']))
             year_path = self.destination_folder_path / str(row['date'].year)
             # Creating year folder if not exist
             try:
@@ -162,7 +159,6 @@ class File:
 
             # Creating custom folder based on the file
             custom_path = year_path / row['custom_folder_name']
-            print(custom_path)
             try:
                 custom_path.mkdir()
                 self.folder_counter[1] += 1
@@ -175,22 +171,68 @@ class File:
             print("No custom folders have been created.")
         return True
 
-    def copy_files(self):
-        if len(self.files_to_copy) > 0:
-            for file in self.matches_list:
-                if file in self.files_to_copy:
-                    # Finding the year and month to copy the file
-                    year = self.photo_video_metadata_df .loc[self.photo_video_metadata_df ['filename'] == file, 'year'].iloc[0]
-                    month = self.photo_video_metadata_df .loc[self.photo_video_metadata_df ['filename'] == file, 'month'].iloc[0]
+    def copy(self):
+
+        # Copying will be performed when:
+        # - self.files_to_copy list is not empy
+        # - self.copy_files flag equals one
+        # - self.standard_or_custom_folder flag is set either to one or two (right now two available choices)
+
+        # Defining DataFrame as a source to copy from
+        self.photo_video_metadata_df_to_copy = self.photo_video_metadata_df[
+            self.photo_video_metadata_df['filename'].isin(self.files_to_copy)
+            ]
+
+        if self.files_to_copy and self.copy_files == 1 and self.standard_or_custom_folder in (1,2):
+
+            # Copying only to custom folders (if all custom folders has been declares - self.customs_read flag)
+            if self.standard_or_custom_folder == 1 and self.customs_ready == 1:
+                print("Copying will now be performed. Type: custom")
+                for tuple_object in self.photo_video_metadata_df_to_copy.itertuples():
+                    file = tuple_object.filename
+                    date = pd.to_datetime(tuple_object.date)
+                    year = tuple_object.year
+                    destination_folder_path_custom = self.custom_folder_df.loc[
+                        (date >= self.custom_folder_df['min_date']) &
+                        (date <= self.custom_folder_df['max_date']),
+                        'event_name'
+                    ].iloc[0]
                     try:
-                        shutil.copy2(self.source_folder_path/file, self.destination_folder_path/year/month)
+                        source = self.source_folder_path / file
+                        destination = self.destination_folder_path / destination_folder_path_custom
+                        shutil.copy2(self.source_folder_path / file, self.destination_folder_path / year / destination_folder_path_custom)
+                        print("Copying for filename:", file, "succeded.")
+                        # TO ADD COPYING TO YEAR AND MONTH FOLDER
+                        # shutil.copy2(self.source_folder_path/file, self.destination_folder_path/year/month)
                     except:
                         print("Errors have been encountered while copying.")
-                else:
-                    continue
-            print("Copying finished")
-        else:
+
+            if self.standard_or_custom_folder == 1 and self.customs_ready == 0:
+                print("You need to declare custom folder names in external file before continuing")
+
+            # Copying to custom folders and standard if custom does not exist.
+            elif self.standard_or_custom_folder == 2:
+                print("Copying will now be performed. Type mixed: both standard and custom")
+                # Finding the year and month to copy the file
+                year = (
+                    self.photo_video_metadata_df.loc[
+                        self.photo_video_metadata_df['filename'] == file,
+                        'year'
+                    ].iloc[0]
+                )
+
+                month = (
+                    self.photo_video_metadata_df.loc[
+                        self.photo_video_metadata_df['filename'] == file,
+                        'month'
+                    ].iloc[0]
+                )
+        elif not self.files_to_copy:
             print("Copying will not be performed as there is no files to copy.")
+        elif self.copy_files != 1:
+            print("Copying will not be performed as no copying disposition has been set.")
+        else:
+            pass
         return True
 
     def read_event_names_from_pictures(self, reading_range):
@@ -308,12 +350,14 @@ class File:
         self.customs_ready = 1
         for index, event in self.photo_video_metadata_with_no_custom_folders.iterrows():
             if not self.event_named_df.empty:
-                if event['random_filename'] not in self.event_named_df['random_filename']:
+                if not event['random_filename'] in self.event_named_df['random_filename'].values:
                     print(f"Custom folder missing for filename: {event['random_filename']}")
                     # If not all event has been declared change the flag
                     self.customs_ready = 0
+                else:
+                    pass
             else:
-                continue
+                pass
         return True
 
     def build_custom_source(self):
@@ -327,7 +371,6 @@ class File:
                                self.destination_folder_path,
                                "Image and Video Files custom folders total.xlsx"
                                )
-
         return True
 
     def generateExcelFile(self,
@@ -411,22 +454,9 @@ class File:
             # Join together external Excel file Custom Folders source with specified folder source
             self.build_custom_source()
 
-            # Check if pictures and videos were not customized in external Excel Folder
-            # Copy files from list of self.files_to_copy to destination location (based on year-month so far)
-            if self.copy_files == 1:
-                if self.standard_or_custom_folder == 1:
-                    if self.customs_ready == 1:
-                        print("Copying will now be performed. Type: custom")
-                        self.copy_files()
-                    else:
-                        print("You need to declare custom folder names in external file before continuing")
-                elif self.standard_or_custom_folder == 2:
-                    print("Copying will now be performed. Type mixed: both standard and custom")
-                    self.copy_files()
-            elif self.copy_files == 0:
-                print("Files will not be copied as no copying disposition has been expected ")
-            else:
-                print("Copying operation not defined")
+            # Copy files
+            self.copy()
+
         return True
 
 class ExcelFile:
@@ -479,7 +509,7 @@ if True:
     ######################################
 
     # Paths definitions to be defined
-    source_folder_path = r''
+    source_folder_path = r'4'
     destination_folder_path = r''
     excel_file_path = r''
 
@@ -491,7 +521,7 @@ if True:
     # Copy Files
     # 1 - copy files
     # 0 - only analyze
-    copy_files = 0
+    copy_files = 1
 
     #######################################
 
