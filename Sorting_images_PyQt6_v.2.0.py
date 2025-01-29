@@ -6,11 +6,10 @@ import shutil
 from openpyxl.styles import PatternFill
 
 class File:
-    def __init__(self, source_folder_path, destination_folder_path, event_named_df_prepared, event_named_df, standard_or_custom_folder, copy_files):
+    def __init__(self, source_folder_path, destination_folder_path, event_named_df_prepared, standard_or_custom_folder, copy_files):
         self.source_folder_path = Path(source_folder_path.replace("\\", "\\\\"))
         self.destination_folder_path = Path(destination_folder_path.replace("\\", "\\\\"))
         self.event_named_df_prepared = event_named_df_prepared
-        self.event_named_df = event_named_df
         self.standard_or_custom_folder = standard_or_custom_folder
         self.copy_files = copy_files
     def path_validation(self):
@@ -148,8 +147,8 @@ class File:
     def create_custom_folders(self):
         print("Starting 'create_custom_folders' function...")
         self.folder_counter = [0, 0]
-        for index, row in self.event_named_df.iterrows():
-            year_path = self.destination_folder_path / str(row['date'].year)
+        for index, row in self.event_named_df_prepared.iterrows():
+            year_path = self.destination_folder_path / str(row['year'])
             # Creating year folder if not exist
             try:
                 year_path.mkdir()
@@ -158,7 +157,7 @@ class File:
                 pass
 
             # Creating custom folder based on the file
-            custom_path = year_path / row['custom_folder_name']
+            custom_path = year_path / row['event_name']
             try:
                 custom_path.mkdir()
                 self.folder_counter[1] += 1
@@ -350,8 +349,8 @@ class File:
         # Default settings
         self.customs_ready = 1
         for index, event in self.photo_video_metadata_with_no_custom_folders.iterrows():
-            if not self.event_named_df.empty:
-                if not event['random_filename'] in self.event_named_df['random_filename'].values:
+            if not self.event_named_df_prepared.empty:
+                if not event['random_filename'] in self.event_named_df_prepared['random_filename'].values:
                     # If not all event has been declared change the flag
                     self.customs_ready = 0
                 else:
@@ -365,6 +364,10 @@ class File:
             [self.event_names_df, self.event_named_df_prepared],
             axis=0
         )
+
+        self.custom_folder_df.drop(['random_filename'],
+                                   axis=1,
+                                   inplace=True)
         self.custom_folder_df.drop_duplicates()
         # Generate a file with additional column containing matched custom folder
         self.generateExcelFile(self.custom_folder_df,
@@ -481,6 +484,7 @@ class ExcelFile:
 
     def read_from_excel_file(self):
         self.event_named_df = pd.read_excel(self.excel_file_path)
+        # Set column name 'date' to datetime object
         self.event_named_df['date'] = pd.to_datetime(self.event_named_df['date'])
         return self.event_named_df
 
@@ -490,8 +494,8 @@ class ExcelFile:
         self.event_named_df['max_date'] = self.event_named_df.groupby(['custom_folder_name'])['date'].transform('max')
         self.event_named_df['year'] = self.event_named_df['date'].dt.year.astype(str).str.zfill(2)
         self.event_named_df['month'] = self.event_named_df['date'].dt.month.astype(str).str.zfill(2)
-        self.event_named_df_prepared = self.event_named_df.loc[:, ['custom_folder_name', 'year', 'month', 'min_date', 'max_date']]
-        self.event_named_df_prepared.columns = ['event_name', 'year', 'month', 'min_date', 'max_date']
+        self.event_named_df_prepared = self.event_named_df.loc[:, ['random_filename', 'custom_folder_name', 'year', 'month', 'min_date', 'max_date']]
+        self.event_named_df_prepared.columns = ['random_filename', 'event_name', 'year', 'month', 'min_date', 'max_date']
         self.event_named_df_prepared.drop_duplicates()
 
     def run(self):
@@ -503,7 +507,7 @@ class ExcelFile:
             print(f"File prepared: {self.event_named_df.head()}")
         else:
             print("There was an error with path")
-        return self.event_named_df, self.event_named_df_prepared
+        return self.event_named_df_prepared
 
 # Main part
 if True:
@@ -531,19 +535,17 @@ if True:
     # If custom folders have been defined
     if excel_file_path != "":
         excel_file_obj = ExcelFile(excel_file_path)
-        event_named_df, event_named_df_prepared = excel_file_obj.run()
+        event_named_df_prepared = excel_file_obj.run()
 
     # In other cases
     else:
         # If no path has been defined set empty DataFrame
-        event_named_df = pd.DataFrame()
         event_named_df_prepared = pd.DataFrame()
 
     # Anyway run main program starting with creating File Class object
     file = File(source_folder_path,
                 destination_folder_path,
                 event_named_df_prepared,
-                event_named_df,
                 standard_or_custom_folder,
                 copy_files)
 
