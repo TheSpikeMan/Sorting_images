@@ -359,11 +359,14 @@ class File:
         # Renaming columns
         self.photo_video_metadata_with_no_custom_folders.columns = ['date', 'random_filename', 'custom_folder_name']
 
-        # Generate a file with additional column containing matched custom folder
-        self.generateExcelFile(self.photo_video_metadata_with_no_custom_folders,
-                               self.destination_folder_path,
-                               "Image and Video Files not matching to custom folders.xlsx"
-                               )
+        if not self.photo_video_metadata_with_no_custom_folders.empty:
+            # Generate a file with additional column containing matched custom folder
+            self.generateExcelFile(self.photo_video_metadata_with_no_custom_folders,
+                                   self.destination_folder_path,
+                                   "Image and Video Files not matching to custom folders.xlsx"
+                                   )
+        else:
+            print("There are no files with no custom folders declared.")
         return True
 
     def verify_external_excel_custom_folder(self):
