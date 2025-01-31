@@ -428,10 +428,10 @@ class File:
                         print(f"Something has gone wrong while copying. Check the parameters set")
                 # Trying to copy
                 try:
-                    shutil.copy2(self.source_folder_path / file,
+                    shutil.copy2(path / file,
                                  self.destination_folder_path / year / destination_folder)
-                except:
-                    print("Errors have been encountered while copying.")
+                except Exception as e:
+                    print(f"Errors have been encountered while copying: {e}")
             print("Copying finished")
         elif not self.files_to_copy:
             print("Copying will not be performed as there is no files to copy.")
