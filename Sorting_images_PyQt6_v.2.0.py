@@ -288,8 +288,6 @@ class File:
         self.event_names_df.drop(columns = ['extension', 'day', 'date'], inplace=True)
         # Drop duplicates
         self.event_names_df.drop_duplicates(inplace=True)
-        # Save to Excel file
-        self.generateExcelFile(self.event_names_df, self.destination_folder_path, "Event names.xlsx")
 
     def find_dates_with_no_custom_folder(self):
         print("Starting function checking matching pictures to folders")
@@ -372,7 +370,7 @@ class File:
         # Generate a file with additional column containing matched custom folder
         self.generateExcelFile(self.custom_folder_df,
                                self.destination_folder_path,
-                               "Image and Video Files custom folders total.xlsx"
+                               "Event names.xlsx"
                                )
         return True
 
