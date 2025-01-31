@@ -6,9 +6,15 @@ import shutil
 from openpyxl.styles import PatternFill
 
 class File:
-    def __init__(self, source_folder_path, destination_folder_path, event_named_df_prepared, standard_or_custom_folder, copy_files):
+    def __init__(self, source_folder_path,
+                 destination_folder_path,
+                 reading_range,
+                 event_named_df_prepared,
+                 standard_or_custom_folder,
+                 copy_files):
         self.source_folder_path = Path(source_folder_path.replace("\\", "\\\\"))
         self.destination_folder_path = Path(destination_folder_path.replace("\\", "\\\\"))
+        self.reading_range = Path(reading_range.replace("\\", "\\\\"))
         self.event_named_df_prepared = event_named_df_prepared
         self.standard_or_custom_folder = standard_or_custom_folder
         self.copy_files = copy_files
@@ -527,6 +533,7 @@ if True:
     # Paths definitions to be defined
     source_folder_path = r''
     destination_folder_path = r''
+    reading_range = r''
     excel_file_path = r''
 
     # Flag for creating standard or custom folders
@@ -556,6 +563,7 @@ if True:
     # Anyway run main program starting with creating File Class object
     file = File(source_folder_path,
                 destination_folder_path,
+                reading_range,
                 event_named_df_prepared,
                 standard_or_custom_folder,
                 copy_files)
