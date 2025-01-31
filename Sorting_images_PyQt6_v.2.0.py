@@ -516,7 +516,6 @@ class ExcelFile:
         if validation_flag:
             self.event_named_df = self.read_from_excel_file()
             self.prepare_the_file()
-            print(f"File prepared: {self.event_named_df.head()}")
         else:
             print("There was an error with path")
         return self.event_named_df_prepared
