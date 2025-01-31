@@ -400,6 +400,7 @@ class File:
                 date = pd.to_datetime(tuple_object.date)
                 year = tuple_object.year
                 month = tuple_object.month
+                path = tuple_object.path
                 destination_folder_path_custom = self.custom_folder_df.loc[
                     (date >= self.custom_folder_df['min_date']) &
                     (date <= self.custom_folder_df['max_date']),
