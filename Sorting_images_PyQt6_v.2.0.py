@@ -253,12 +253,7 @@ class File:
             pass
         return True
 
-    def read_event_names_from_pictures(self, reading_range):
-        """
-
-        Parameters
-        ----------
-        reading_range: STRING, Path to folder being a source of folder names according to dates
+    def read_event_names_from_pictures(self):
 
         self.pattern = r'.*(?P<year>20[123]\d)(?P<month>[01]\d)(?P<day>[0123]\d).*'
         self.extensions_to_search = ['*.jpg', '*.jpeg', '*.mp4']
@@ -527,7 +522,8 @@ class ExcelFile:
             self.event_named_df = self.read_from_excel_file()
             self.prepare_the_file()
         else:
-            print("There was an error with path")
+            self.event_named_df_prepared = pd.DataFrame(columns = ['random_filename', 'event_name', 'year', 'month', 'min_date', 'max_date'])
+            print("There was an error with external path to custom folder. Empty DataFrame has been created")
         return self.event_named_df_prepared
 
 # Main part
@@ -552,17 +548,9 @@ if True:
 
     #######################################
 
-    # Read custom folders from excel File
-
-    # If custom folders have been defined
-    if excel_file_path != "":
-        excel_file_obj = ExcelFile(excel_file_path)
-        event_named_df_prepared = excel_file_obj.run()
-
-    # In other cases
-    else:
-        # If no path has been defined set empty DataFrame
-        event_named_df_prepared = pd.DataFrame()
+    # Read custom folders from excel File if they exist
+    excel_file_obj = ExcelFile(excel_file_path)
+    event_named_df_prepared = excel_file_obj.run()
 
     # Anyway run main program starting with creating File Class object
     file = File(source_folder_path,
