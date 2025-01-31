@@ -86,7 +86,12 @@ class File:
 
         # Generating DataFrame with non matches list and saving as an Excel
         self.files_non_matching = pd.DataFrame(self.non_matches_list, columns = ['filename'])
-        self.generateExcelFile(self.files_non_matching, self.destination_folder_path, "Non Image and Video Files.xlsx")
+
+        # Generate the file only when it is not empty
+        if not self.files_non_matching.empty:
+            self.generateExcelFile(self.files_non_matching, self.destination_folder_path, "Non Image and Video Files.xlsx")
+        else:
+            print("Non Image and Video Files excel file will not be generated because, because they don't exist")
 
         # Find unique year and month
         self.unique_dates = list(set(self.unique_dates))
