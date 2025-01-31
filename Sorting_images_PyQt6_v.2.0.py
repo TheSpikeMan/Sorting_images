@@ -12,11 +12,13 @@ class File:
         self.event_named_df_prepared = event_named_df_prepared
         self.standard_or_custom_folder = standard_or_custom_folder
         self.copy_files = copy_files
+
     def path_validation(self):
         self.folder_paths = [self.source_folder_path, self.destination_folder_path]
+        cwd = Path.cwd()
         for index, self.path in enumerate(self.folder_paths):
             if self.path.exists():
-                if self.path.is_dir():
+                if self.path.is_dir() and self.path.resolve() != cwd:
                     print(f"Nr {index + 1} path validation successful.")
                 else:
                     print(f"Nr {index + 1} path validation unsuccessful - path indicates file.")
