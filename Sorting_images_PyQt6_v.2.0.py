@@ -12,9 +12,11 @@ class File:
                  event_named_df_prepared,
                  standard_or_custom_folder,
                  copy_files):
-        self.source_folder_path = Path(source_folder_path.replace("\\", "\\\\"))
-        self.destination_folder_path = Path(destination_folder_path.replace("\\", "\\\\"))
-        self.reading_range = Path(reading_range.replace("\\", "\\\\"))
+
+        self.folder_paths = []
+        self.paths = [source_folder_path, destination_folder_path, reading_range]
+        (self.source_folder_path,self.destination_folder_path,self.reading_range) = \
+            [Path(path.replace("\\", "\\\\")) for path in self.paths]
         self.event_named_df_prepared = event_named_df_prepared
         self.standard_or_custom_folder = standard_or_custom_folder
         self.copy_files = copy_files
