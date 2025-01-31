@@ -20,18 +20,23 @@ class File:
         self.copy_files = copy_files
 
     def path_validation(self):
-        self.folder_paths = [self.source_folder_path, self.destination_folder_path]
+        self.folder_paths = [self.source_folder_path,
+                             self.destination_folder_path]
         cwd = Path.cwd()
         for index, self.path in enumerate(self.folder_paths):
             if self.path.exists():
                 if self.path.is_dir() and self.path.resolve() != cwd:
                     print(f"Nr {index + 1} path validation successful.")
                 else:
-                    print(f"Nr {index + 1} path validation unsuccessful - path indicates file.")
+                    print(f"Nr {index + 1} path validation unsuccessful - path indicates file or has not been declare at all.")
                     return False
             else:
                 print(f"Nr {index + 1} path validation unsuccessful - path does not exist.")
                 return False
+
+        if self.reading_range.resolve() == cwd:
+            print("Custom folder names source has not been declared")
+
         return True
     def find_image_video_files(self):
 
@@ -255,45 +260,44 @@ class File:
         ----------
         reading_range: STRING, Path to folder being a source of folder names according to dates
 
-        Returns
-        -------
-
-        """
-        self.reading_range = Path(reading_range.replace("\\", "\\\\"))
         self.pattern = r'.*(?P<year>20[123]\d)(?P<month>[01]\d)(?P<day>[0123]\d).*'
         self.extensions_to_search = ['*.jpg', '*.jpeg', '*.mp4']
         self.range_to_add = []
 
-        print("Starting event analysis...")
+        if self.reading_range.resolve() != Path.cwd():
+            print("Starting event analysis...")
 
-        # For all extensions defined above do...
-        for extension in self.extensions_to_search:
-            try:
-                # Finds all files with specific extension
-                for file in self.reading_range.rglob(extension):
-                    self.match_obj = re.match(pattern=self.pattern, string=file.stem)
-                    # If match
-                    if self.match_obj:
-                        # Calculate values
-                        self.year = int(self.match_obj.group('year'))
-                        self.month = int(self.match_obj.group('month'))
-                        self.day = int(self.match_obj.group('day'))
-                        self.event_name = file.parent.name
-                        self.date = datetime.date(self.year, self.month, self.day)
-                        # Every iteration add a next list element as a set
-                        self.range_to_add.append({
-                            'event_name': self.event_name,
-                            'extension': extension,
-                            'year': f"{self.year}",
-                            'month': f"{self.month:02}",
-                            'day': f"{self.day:02}",
-                            'date': self.date})
-            except Exception as e:
-                print(f"There was an error while analyzing the events: {e}")
+            # For all extensions defined above do...
+            for extension in self.extensions_to_search:
+                try:
+                    # Finds all files with specific extension
+                    for file in self.reading_range.rglob(extension):
+                        self.match_obj = re.match(pattern=self.pattern, string=file.stem)
+                        # If match
+                        if self.match_obj:
+                            # Calculate values
+                            self.year = int(self.match_obj.group('year'))
+                            self.month = int(self.match_obj.group('month'))
+                            self.day = int(self.match_obj.group('day'))
+                            self.event_name = file.parent.name
+                            self.date = datetime.date(self.year, self.month, self.day)
+                            # Every iteration add a next list element as a set
+                            self.range_to_add.append({
+                                'event_name': self.event_name,
+                                'extension': extension,
+                                'year': f"{self.year}",
+                                'month': f"{self.month:02}",
+                                'day': f"{self.day:02}",
+                                'date': self.date})
+                except Exception as e:
+                    print(f"There was an error while analyzing the events: {e}")
+        else:
+            print("Adding empty dictionary")
 
         # Create a DataFrame with list of sets
         self.event_names_df = pd.DataFrame(self.range_to_add,
                                            columns=["event_name", "extension", "year", "month", "day", "date"])
+
         # Calculate a maximum and minimum value in the 'window' of grouped values
         self.event_names_df['min_date'] = self.event_names_df.groupby(['event_name', 'year', 'month'])['date'].transform('min')
         self.event_names_df['max_date'] = self.event_names_df.groupby(['event_name', 'year', 'month'])['date'].transform('max')
@@ -465,7 +469,7 @@ class File:
 
             # Create a DataFrame building a source of custom event to dates matches, based on the segregated pictures
             # and write it to self.event_names_df
-            self.read_event_names_from_pictures("") # Set the path to date and filename source
+            self.read_event_names_from_pictures() # Set the path to date and filename source
 
             # Join together external Excel file Custom Folders source with specified folder source
             self.build_custom_source()
