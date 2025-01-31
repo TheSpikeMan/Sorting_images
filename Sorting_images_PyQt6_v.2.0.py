@@ -289,10 +289,33 @@ class File:
         # Calculate a maximum and minimum value in the 'window' of grouped values
         self.event_names_df['min_date'] = self.event_names_df.groupby(['event_name', 'year', 'month'])['date'].transform('min')
         self.event_names_df['max_date'] = self.event_names_df.groupby(['event_name', 'year', 'month'])['date'].transform('max')
+
+        # Convert columns to datetime format
+        self.event_names_df['min_date'] = pd.to_datetime(self.event_names_df['min_date'])
+        self.event_names_df['max_date'] = pd.to_datetime(self.event_names_df['max_date'])
+
         # Drop not used columns
         self.event_names_df.drop(columns = ['extension', 'day', 'date'], inplace=True)
         # Drop duplicates
         self.event_names_df.drop_duplicates(inplace=True)
+
+    def build_custom_source(self):
+        self.custom_folder_df = pd.concat(
+            [self.event_names_df, self.event_named_df_prepared],
+            axis=0
+        )
+
+        self.custom_folder_df.drop(['random_filename'],
+                                   axis=1,
+                                   inplace=True)
+        self.custom_folder_df.drop_duplicates()
+        # Generate a file with additional column containing matched custom folder
+        self.generateExcelFile(self.custom_folder_df,
+                               self.destination_folder_path,
+                               "Event names.xlsx"
+                               )
+        return True
+
 
     def find_dates_with_no_custom_folder(self):
         print("Starting function checking matching pictures to folders")
@@ -303,14 +326,10 @@ class File:
         # Create a column with date
         self.photo_video_metadata_with_no_custom_folders['date'] = pd.to_datetime(self.photo_video_metadata_with_no_custom_folders[['year', 'month', 'day']])
 
-        # Convert columns to datetime format
-        self.event_names_df['min_date'] = pd.to_datetime(self.event_names_df['min_date'])
-        self.event_names_df['max_date'] = pd.to_datetime(self.event_names_df['max_date'])
-
         # Check if date is in range of custom folder and apply custom folder name if true
         self.photo_video_metadata_with_no_custom_folders['event_name'] = self.photo_video_metadata_with_no_custom_folders['date'].apply(
-            lambda x: self.event_names_df.loc[(x >= self.event_names_df['min_date']) & (x <= self.event_names_df['max_date']), 'event_name'].values[0]
-            if not self.event_names_df[(x >= self.event_names_df['min_date']) & (x <= self.event_names_df['max_date'])].empty else None
+            lambda x: self.custom_folder_df.loc[(x >= self.custom_folder_df['min_date']) & (x <= self.custom_folder_df['max_date']), 'event_name'].values[0]
+            if not self.custom_folder_df[(x >= self.custom_folder_df['min_date']) & (x <= self.custom_folder_df['max_date'])].empty else None
         )
 
         # After comparing the dates above I remove time part from datetime object
@@ -351,9 +370,10 @@ class File:
 
         # Default settings
         self.customs_ready = 1
-        for index, event in self.photo_video_metadata_with_no_custom_folders.iterrows():
+        for (index, series) in self.photo_video_metadata_with_no_custom_folders.iterrows():
+            # If external file has been declares and its not empty
             if not self.event_named_df_prepared.empty:
-                if not event['random_filename'] in self.event_named_df_prepared['random_filename'].values:
+                if not series['random_filename'] in self.event_named_df_prepared['random_filename'].values:
                     # If not all event has been declared change the flag
                     self.customs_ready = 0
                 else:
@@ -362,22 +382,6 @@ class File:
                 pass
         return True
 
-    def build_custom_source(self):
-        self.custom_folder_df = pd.concat(
-            [self.event_names_df, self.event_named_df_prepared],
-            axis=0
-        )
-
-        self.custom_folder_df.drop(['random_filename'],
-                                   axis=1,
-                                   inplace=True)
-        self.custom_folder_df.drop_duplicates()
-        # Generate a file with additional column containing matched custom folder
-        self.generateExcelFile(self.custom_folder_df,
-                               self.destination_folder_path,
-                               "Event names.xlsx"
-                               )
-        return True
 
     def generateExcelFile(self,
                           dataframe,
@@ -452,14 +456,14 @@ class File:
             # and write it to self.event_names_df
             self.read_event_names_from_pictures("") # Set the path to date and filename source
 
+            # Join together external Excel file Custom Folders source with specified folder source
+            self.build_custom_source()
+
             # Try to join together pictures and videos from source with custom folders from function above
             self.find_dates_with_no_custom_folder()
 
             # Verify if all missing files and have the custom folder names declared
             self.verify_external_excel_custom_folder()
-
-            # Join together external Excel file Custom Folders source with specified folder source
-            self.build_custom_source()
 
             # Copy files
             self.copy()
