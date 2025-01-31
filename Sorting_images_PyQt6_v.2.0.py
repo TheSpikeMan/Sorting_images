@@ -84,7 +84,8 @@ class File:
                                 'year':f"{self.year}",
                                 'month':f"{self.month:02}",
                                 'day':f"{self.day:02}",
-                                'date': datetime.date(self.year, self.month, self.day)
+                                'date': datetime.date(self.year, self.month, self.day),
+                                'path': file.parent
                             })
                             self.counter_match += 1
                         except ValueError:
@@ -96,7 +97,7 @@ class File:
                 print(f"Error processing files: {e}")
 
         # Generating DataFrame with matches list and saving as an Excel file
-        self.photo_video_metadata_df  = pd.DataFrame(self.new_row_to_add, columns=["filename", "extension", "year", "month", "day", "date"])
+        self.photo_video_metadata_df  = pd.DataFrame(self.new_row_to_add, columns=["filename", "extension", "year", "month", "day", "date", "path"])
         self.generateExcelFile(self.photo_video_metadata_df , self.destination_folder_path, "Image and Video Files.xlsx")
 
         # Generating DataFrame with non matches list and saving as an Excel
