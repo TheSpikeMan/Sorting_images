@@ -383,11 +383,16 @@ class File:
 
     def copy(self):
 
-        # Copying will be performed when:
-        # - len(self.files_to_copy) <> 0
-        # - self.copy_files == 1
-        # - self.standard_or_custom_folder == 0 or self.standard_or_custom_folder == 1 (right now two available choices)
 
+        """
+
+        Copying conditions:
+        - Files to be copied exist -- > len(self.files_to_copy) != 0
+        - User has set flag to copy to True --> self.copy_files == 1
+        - User has set copying type to one of possible ones -->
+        self.standard_or_custom_folder == 1 or self.standard_or_custom_folder == 2 (right now two available choices)
+
+        """
         # Defining DataFrame as a source to copy from
         self.photo_video_metadata_df_to_copy = self.photo_video_metadata_df[
             self.photo_video_metadata_df['filename'].isin(self.files_to_copy)
