@@ -520,6 +520,8 @@ class ExcelFile:
         self.event_named_df['month'] = self.event_named_df['date'].dt.month.astype(str).str.zfill(2)
         self.event_named_df_prepared = self.event_named_df.loc[:, ['random_filename', 'custom_folder_name', 'year', 'month', 'min_date', 'max_date']]
         self.event_named_df_prepared.columns = ['random_filename', 'event_name', 'year', 'month', 'min_date', 'max_date']
+        self.event_named_df_prepared = self.event_named_df_prepared.loc[(self.event_named_df_prepared['event_name'] != "") &
+                                                                        (self.event_named_df_prepared['event_name'].notna()), :]
         self.event_named_df_prepared.drop_duplicates()
 
     def run(self):
