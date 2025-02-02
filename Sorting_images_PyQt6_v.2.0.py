@@ -409,13 +409,15 @@ class File:
                 year = tuple_object.year
                 month = tuple_object.month
                 path = tuple_object.path
+
+                # First setting destination prioritized on custom folder
                 destination_folder_path_custom = self.custom_folder_df.loc[
                     (date >= self.custom_folder_df['min_date']) &
                     (date <= self.custom_folder_df['max_date']),
                     'event_name'
                 ]
 
-                # Checking if match exist. If not assigning None.
+                # Checking if custom folder match exist. If not assigning None.
                 if not destination_folder_path_custom.empty:
                     destination_folder_path_custom = destination_folder_path_custom.iloc[0]
                 else:
