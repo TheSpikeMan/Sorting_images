@@ -393,57 +393,56 @@ class File:
         self.standard_or_custom_folder == 1 or self.standard_or_custom_folder == 2 (right now two available choices)
 
         """
-        # Defining DataFrame as a source to copy from
-        self.photo_video_metadata_df_to_copy = self.photo_video_metadata_df[
-            self.photo_video_metadata_df['filename'].isin(self.files_to_copy)
-        ]
 
-        # Checking the basic conditions to meet
+        custom_folder_df = self.custom_folder_df.copy()
+        custom_folder_df['min_date'] = pd.to_datetime(custom_folder_df['min_date'])
+        custom_folder_df['max_date'] = pd.to_datetime(custom_folder_df['max_date'])
+
+        # Mapping dates to events. Multiples events per dates are included
+        folder_map = {}
+        for _, row in custom_folder_df.iterrows():
+            for date in pd.date_range(row['min_date'], row['max_date']):
+                folder_map[date] = row['event_name']
+
+        # Checking conditions
         if self.files_to_copy and self.copy_files == 1 and self.standard_or_custom_folder in (1, 2):
             print("Copying in progress...")
-            for tuple_object in self.photo_video_metadata_df_to_copy.itertuples():
 
-                # Assigning values to variables
-                file = tuple_object.filename
-                date = pd.to_datetime(tuple_object.date)
-                year = tuple_object.year
-                month = tuple_object.month
-                path = tuple_object.path
+            # Prepare the data
+            self.photo_video_metadata_df['date'] = pd.to_datetime(self.photo_video_metadata_df['date'])
 
-                # First setting destination prioritized on custom folder
-                destination_folder_path_custom = self.custom_folder_df.loc[
-                    (date >= self.custom_folder_df['min_date']) &
-                    (date <= self.custom_folder_df['max_date']),
-                    'event_name'
-                ]
+            # Finding the events for specific date
+            self.photo_video_metadata_df['destination_folder'] = self.photo_video_metadata_df['date'].map(folder_map)
 
-                # Checking if custom folder match exist. If not assigning None.
-                if not destination_folder_path_custom.empty:
-                    destination_folder_path_custom = destination_folder_path_custom.iloc[0]
+            # Iterate over every row
+            for _, row in self.photo_video_metadata_df.iterrows():
+                file = row['filename']
+                date = row['date']
+                year = row['year']
+                month = row['month']
+                path = row['path']
+
+                destination_folder_path_custom = row['destination_folder']
+
+                # If custom folder event has been declared (is not None)
+                if destination_folder_path_custom:
+                    destination_folder = destination_folder_path_custom
+                    destination_folder_path = self.destination_folder_path / str(year) / destination_folder
+                    try:
+                        shutil.copy2(path / file, destination_folder_path)
+                    except Exception as e:
+                        print(f"Errors have been encountered while copying: {e}")
+                # In case when custom folder has not been declared
                 else:
-                    destination_folder_path_custom = None
+                    destination_folder = month
+                    destination_folder_path = self.destination_folder_path / str(year) / destination_folder
+                    try:
+                        shutil.copy2(path / file, destination_folder_path)
+                    except Exception as e:
+                        print(f"Errors have been encountered while copying: {e}")
 
-                # Checking the value of parameters set
-                match (self.standard_or_custom_folder, self.customs_ready):
-                    case (1, 1):
-                        destination_folder = destination_folder_path_custom
-                    case (1, 0):
-                        print("You need to declare custom folder names in external file before continuing")
-                        return True
-                    case (2, 1) | (2, 0):
-                        if destination_folder_path_custom:
-                            destination_folder = destination_folder_path_custom
-                        else:
-                            destination_folder = month
-                    case _:
-                        print(f"Something has gone wrong while copying. Check the parameters set")
-                # Trying to copy
-                try:
-                    shutil.copy2(path / file,
-                                 self.destination_folder_path / year / destination_folder)
-                except Exception as e:
-                    print(f"Errors have been encountered while copying: {e}")
             print("Copying finished")
+
         elif not self.files_to_copy:
             print("Copying will not be performed as there is no files to copy.")
         elif self.copy_files != 1:
