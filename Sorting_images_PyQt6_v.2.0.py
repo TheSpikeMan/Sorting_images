@@ -27,6 +27,7 @@ class File:
         cwd = Path.cwd()
         for index, self.path in enumerate(self.folder_paths):
             if self.path.exists():
+                # Checking ig self.path does not point current working directory (default settings)
                 if self.path.is_dir() and self.path.resolve() != cwd:
                     print(f"Nr {index + 1} path validation successful.")
                 else:
@@ -36,6 +37,7 @@ class File:
                 print(f"Nr {index + 1} path validation unsuccessful - path does not exist.")
                 return False
 
+        # If default settings has been set
         if self.reading_range.resolve() == cwd:
             print("Custom folder names source has not been declared")
 
@@ -58,6 +60,7 @@ class File:
 
         print("Starting files analysis in order to find pictures and movies...")
 
+        # Searching only in area of predefined extensions
         for extension in self.extensions_to_search:
             try:
                 # Finds all files with specific extension
@@ -100,10 +103,10 @@ class File:
         self.photo_video_metadata_df  = pd.DataFrame(self.new_row_to_add, columns=["filename", "extension", "year", "month", "day", "date", "path"])
         self.generateExcelFile(self.photo_video_metadata_df , self.destination_folder_path, "Image and Video Files.xlsx")
 
-        # Generating DataFrame with non matches list and saving as an Excel
-        self.files_non_matching = pd.DataFrame(self.non_matches_list, columns = ['filename'])
+        # Preparing a list of non matching files
+        self.files_non_matching = pd.DataFrame(self.non_matches_list, columns=['filename'])
 
-        # Generate the file only when it is not empty
+        # Generating files from Non Matches List only when the files is not empty
         if not self.files_non_matching.empty:
             self.generateExcelFile(self.files_non_matching, self.destination_folder_path, "Non Image and Video Files.xlsx")
         else:
